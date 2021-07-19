@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ajax.html</title>
+    <script src="js/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(onLoadFunc);
+
+        function onLoadFunc() {
+            $.ajax({
+                url: 'MOCK_DATA.json',    // 호출할 페이지...
+                //data: '',   // 파라미터로 사용할 값...
+                success: successCollBack,
+                error: errorCollBack
+            });
+
+        }
+
+        function successCollBack(result) {
+            const ul = $('<ul />');
+            for (let i = 0; i < result.length; i++) {
+                let li = $('<li />').attr('id', result[i].id)  //
+                    .html('<b>'+result[i].first_name+'-'+result[i].last_name+'</b>');
+                ul.append(li);
+            }
+            $('#show').append(ul);
+        }
+
+        function errorCollBack(reject) {
+
+        }
+    </script>
+
+</head>
+<body>
+    <div id="show"></div>
+</body>
+</html>

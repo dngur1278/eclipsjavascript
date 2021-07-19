@@ -3,50 +3,63 @@
 <head>
 <meta charset="UTF-8">
 <title>comments.html</title>
+<script src="../js/jquery-3.6.0.min.js"></script>
 <script>
-	window.onload = function() {
+
+	$(document).ready(function () {
 		loadCommentList();
-	}
+	});
+
+//	window.onload = function() {
+//		loadCommentList();
+//	}
 	
 	// 목록조회..
 	function loadCommentList() {
 		// ajax.. 호출...서블릿 호출...
-		let xhtp = new XMLHttpRequest();
-		xhtp.open('get', '../CommentsServ?cmd=selectAll');
-		xhtp.send();
-		xhtp.onreadystatechange = loadCommentResult;
+		// let xhtp = new XMLHttpRequest();
+		// xhtp.open('get', '../CommentsServ?cmd=selectAll');
+		// xhtp.send();
+		// xhtp.onreadystatechange = loadCommentResult;
+		
+		$.ajax({
+			url: '../CommentsServ', //요청페이지
+			data: {cmd: 'selectAll'},	// cmd=selectAll
+			success: loadCommentResult,
+			error: function() {
+				alert("Error!!!!! Error!!!!!");
+			}
+		});
 	}
 	
 	// 조회결과..
-	function loadCommentResult() {
-		if (this.readyState == 4 && this.status == 200) {
-			// string -> xml
-			let xmp = new DOMParser();
-			let xmlDoc = xmp.parseFromString(this.responseText, 'text/xml');
-			let code = xmlDoc.getElementsByTagName('code')[0].innerHTML;
-			let listDiv = document.getElementById('commentList');
-			if (code == 'success') {
-				let commentList = eval(xmlDoc.getElementsByTagName('data')[0].innerHTML);
-				console.log(commentList);
-				for (let i = 0; i < commentList.length; i++){
-					listDiv.appendChild(makeCommentView(commentList[i]));
-				}
+	function loadCommentResult(result) {	
+		
+		// string -> xml
+		let xmp = new DOMParser();
+		let xmlDoc = xmp.parseFromString(result, 'text/xml');
+		let code = $(xmlDoc).find('code').html();
+		let listDiv = $('#commentList');
+		if (code == 'success'){
+			let commentList = eval($(xmlDoc).find('data').html());
+			for (let i = 0; i < commentList.length; i++) {
+				listDiv.append(makeCommentView(commentList[i]));
 			}
-			console.log(xmlDoc);
 		}
 	}
 	
 	// 한 건을 화면에 보여줌..
 	function makeCommentView(comment) {
-		let div = document.createElement('div');
-		div.setAttribute('id', comment.id);
-		div.className = 'comment';
-		div.comment = comment;		// {id:1, name:'user', content:'test'}
+		let div = $('<div />');   //document.createElement('div');
+		$(div).attr('id', comment.id);  //div.setAttribute('id', comment.id);
+		$(div).addClass('comment');		//div.className = 'comment';
+		//div.comment = comment;	// {id:1, name:'user', content:'test'}
+		$(div).data('obj', comment);
 		let str = '<strong>' + comment.name + '</strong>' +
 				comment.content + 
 				'<input type="button" value="수정" onclick="viewUpdateForm('+ comment.id +')">'+
 				'<input type="button" value="삭제" onclick="confirmDeletion('+ comment.id +')">';
-		div.innerHTML = str;	// <div><strong>ddd</strong></div>
+		$(div).html(str); 		//div.innerHTML = str;	// <div><strong>ddd</strong></div>
 		
 		return div;
 	}
@@ -67,58 +80,148 @@
 			return;
 		}
 		
-		let param = "&name="+name+"&content="+content;
-		
 		// ajax 호출 .. 
-		let xhtp = new XMLHttpRequest();
+		$.ajax({
+			url: '../CommentsServ',
+			data: { cmd: 'insert', 
+					name: name,
+					content: content},
+			success: addResult,
+			error: function() {
+				alert("Error!!!!! Error!!!!!");
+			}
+		});
+		/* let xhtp = new XMLHttpRequest();
 		xhtp.open('get', '../CommentsServ?cmd=insert'+ param);
 		xhtp.send();
-		xhtp.onreadystatechange = addResult;
+		xhtp.onreadystatechange = addResult; */
 		
 	}
 	
 	// 등록 콜백 함수..
-	function addResult() {
-		if (this.readyState == 4 && this.status == 200) {
-			// string -> xml
-			let xmp = new DOMParser();
-			let xmlDoc = xmp.parseFromString(this.responseText, 'text/xml');
-			let code = xmlDoc.getElementsByTagName('code').item(0).innerHTML;
-			let listDiv = document.getElementById('commentList');
+	function addResult(result) {
+	
+		// string -> xml
+		let xmp = new DOMParser();
+		let xmlDoc = xmp.parseFromString(result, 'text/xml');
+		let code = $(xmlDoc).find('code').html();
+		let listDiv = $('#commentList');
 			
-			if (code == "success") {
-				//let comment = eval(xmlDoc.getElementsByTagName('data').item(0).innerHTML);
-				let comment = JSON.parse(xmlDoc.getElementsByTagName('data').item(0).innerHTML);
-				listDiv.appendChild(makeCommentView(comment));
-				addForm.name.value = '';
-				addForm.content.value = '';
-				alert("등록했습니다. [" + comment.id + "]");
-			} else if (code == "error"){
-				alert("에러발생했습니다!");
-			}
-			console.log(xmlDoc);
-			
+		if (code == "success") {
+			//let comment = eval(xmlDoc.getElementsByTagName('data').item(0).innerHTML);
+			let comment = JSON.parse($(xmlDoc).find('data').html());
+			listDiv.append(makeCommentView(comment));
+			addForm.name.value = '';
+			addForm.content.value = '';
+			alert("등록했습니다. [" + comment.id + "]");
+		} else if (code == "error"){
+			alert("에러발생했습니다!");
 		}
 	}
 	
 	// 수정화면...
 	function viewUpdateForm(commentId) {
-		let commentDiv = document.getElementById(commentId);		
-		let updateFormDiv = document.getElementById('commentUpdate');
+		let commentDiv = $('#'+commentId);	//document.getElementById(commentId);
+		let updateFormDiv = $('#commentUpdate'); // document.getElementById('commentUpdate');
 		
-		commentDiv.appendChild(updateFormDiv);	// 수정화면에 id기준으로 정보를 보여줌...
-		let comment = commentDiv.comment;		// id, name, content 정보불러옴...
+		$(commentDiv).after(updateFormDiv);	// 수정화면에 id기준으로 정보를 보여줌...
+		let comment = $(commentDiv).data('obj');	//commentDiv.comment;	// id, name, content 정보불러옴...
 		updateForm.id.value = comment.id;
 		updateForm.name.value = comment.name;
 		updateForm.content.value = comment.content;
-		updateFormDiv.style.display = 'block';
+		//updateFormDiv.style.display = 'block';
+		$(updateFormDiv).css('display', 'block');
 	}
 	
 	// ajax 호출 수정
 	function updateComment() {
+		const id = document.updateForm.id.value;
+		const name = document.updateForm.name.value;
+		const content = document.updateForm.content.value;
+	/* 	const param = '?cmd=update&id=' + id + '&name=' + name + '&content=' + content;
+		
+		const xhtp = new XMLHttpRequest();
+		xhtp.open('get', '../CommentsServ' + param);
+		xhtp.send();
+		xhtp.onreadystatechange = updateResult; */
+		$.ajax({
+			url: '../CommentsServ',
+			data: { cmd: 'update', 
+					id: id,
+					name: name,
+					content: content},
+			success: updateResult,
+			error: function() {
+				alert("Error!!!!! Error!!!!!");
+			}
+		});
 		
 	}
 	
+	// ajax호출 콜백 함수
+	function updateResult(result) {
+
+		const xmlDoc = result;
+		const code = xmlDoc.getElementsByTagName('code')[0].firstChild.nodeValue;
+	//	const code = xmlDoc.getElementsByTagName('code')[0].firstChild.nodeValue;
+		if (code == 'success') {
+			const comment = JSON.parse(xmlDoc.getElementsByTagName('data')[0].firstChild.nodeValue);
+			const listDiv = $('#commentList');
+			const commentDiv = makeCommentView(comment);
+			const oldCommentDiv = $('#' + comment.id);
+			//listDiv.replaceChild(commentDiv, oldCommentDiv);
+			$(oldCommentDiv).replaceWith(commentDiv);
+			alert("Update!! Complete!!");
+			$('#commentUpdate').css({
+				display : 'none'
+			});
+		} else {
+			alter("Error!!!!! Error!!!!!");
+		}
+	}
+	
+	// 삭제...
+	function confirmDeletion(id) {
+	/* 	const xhtp = new XMLHttpRequest();
+		xhtp.open('get', '../CommentsServ?cmd=delete&id='+id);
+		xhtp.send();
+		xhtp.onreadystatechange = deleteResult;
+		 */
+		$.ajax({
+			url: '../CommentsServ',
+			data: {
+				cmd: 'delete',
+				id: id
+			},
+			success: deleteResult,
+			error: function() {
+				alert("Error!!!!! Error!!!!!");
+			}
+		});
+	}
+	
+	// 삭제 콜백 함수
+	function deleteResult(result) {
+		
+		console.log(result);
+		const xmlDoc = result;
+		const code = xmlDoc.getElementsByTagName('code')[0].firstChild.nodeValue;
+		if (code == 'success') {
+			const comment = JSON.parse(xmlDoc.getElementsByTagName('data')[0].firstChild.nodeValue);
+			const oldCommentDiv = $('#' + comment.id);
+			oldCommentDiv.remove();
+			alert("Delete!! Complete!!");
+		} else {
+			alter("Error!!!!! Error!!!!!");
+		}
+	}
+	
+	// 취소...
+	function calcelUpdate() {
+		$('#commentUpdate').css({
+			display : 'none'
+		});
+	}
 	
 </script>
 </head>

@@ -17,10 +17,54 @@ public class CommentsDAO extends DAO{
 	}
 	
 	//수정
-//	public HashMap<String, Object> update(Comments comment) {
-//		
-//	}
-//	
+	public HashMap<String, Object> update(Comments comment) {
+		connect();
+		String sql = "update comments set name=?, content=? where id=?";
+		HashMap<String, Object> map = null;
+		try {
+			psmt = conn.prepareStatement(sql);
+			psmt.setString(1, comment.getName());
+			psmt.setString(2, comment.getContent());
+			psmt.setString(3, comment.getId());
+			psmt.executeUpdate();
+			
+			map = new HashMap<String, Object>();
+			
+			map.put("id", comment.getId());
+			map.put("name", comment.getName());
+			map.put("content", comment.getContent());
+			map.put("code", "success");
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+			map.put("code", "error");
+		}
+		
+		return map;
+	}
+	
+	//삭제
+	public HashMap<String, Object> delete(Comments comment) {
+		connect();
+		String sql = "delete from comments where id = ?";
+		HashMap<String, Object> map = null;
+		try {
+			psmt = conn.prepareStatement(sql);
+			psmt.setString(1, comment.getId());
+			psmt.executeUpdate();
+			
+			map = new HashMap<String, Object>();
+			
+			map.put("id", comment.getId());
+			map.put("code", "success");
+		} catch (SQLException e) {
+			e.printStackTrace();
+			map.put("code", "error");
+		}
+		
+		return map;
+	}
+	
 	
 	// 입력
 	public HashMap<String, Object> insert(Comments comment) {
